@@ -2,18 +2,18 @@ FROM golang:1.21-alpine
 
 WORKDIR /app
 
-# Copy go mod files (check if go.mod and go.sum are changed, if not, the docker will use the cache)
+# Copy go mod files
 COPY go.mod go.sum ./
 RUN go mod download
 
-# Copy the entire project
+# Copy source
 COPY . .
 
-# Build the application
+# Build
 RUN go build -o main ./cmd
 
-# Expose the port
+# Expose port
 EXPOSE 10000
 
-# Run the application
+# Run
 CMD ["./main"]
