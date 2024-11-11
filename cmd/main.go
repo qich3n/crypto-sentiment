@@ -27,6 +27,7 @@ type RedditPost struct {
 
 // Global variable to store X Bearer Token
 var xBearerToken string
+var twitterEnabled bool
 
 func init() {
 	// Load .env file
@@ -34,14 +35,24 @@ func init() {
 		log.Printf("Warning: .env file not found")
 	}
 
-	// Initialize X Bearer Token
-	var err error
-	xBearerToken, err = getXBearerToken()
-	if err != nil {
-		log.Printf("Warning: Failed to initialize X Bearer Token: %v", err)
+	// Check if Twitter credentials are provided
+	if apiKey := strings.TrimSpace(os.Getenv("TWITTER_API_KEY")); apiKey != "" {
+		// Initialize X Bearer Token only if credentials are provided
+		var err error
+		xBearerToken, err = getXBearerToken()
+		if err != nil {
+			log.Printf("Warning: Failed to initialize X Bearer Token: %v", err)
+			twitterEnabled = false
+		} else {
+			twitterEnabled = true
+			log.Println("Twitter integration enabled")
+		}
+	} else {
+		log.Println("Twitter integration disabled - no API credentials provided")
+		twitterEnabled = false
 	}
 
-	// Create necessary directories if they don't exist
+	// Create necessary directories
 	createRequiredDirectories()
 }
 
@@ -188,9 +199,13 @@ func testAPIs() {
 	fmt.Println("\n1. Testing Reddit API:")
 	testRedditAPI()
 
-	// Test X (Twitter) API
-	fmt.Println("\n2. Testing X (Twitter) API:")
-	testXAPI()
+	// Test X (Twitter) API only if enabled
+	if twitterEnabled {
+		fmt.Println("\n2. Testing X (Twitter) API:")
+		testXAPI()
+	} else {
+		fmt.Println("\n2. X (Twitter) API: Disabled")
+	}
 }
 
 func testRedditAPI() {
@@ -275,34 +290,42 @@ func testXAPI() {
 func healthCheck(c *gin.Context) {
 	c.JSON(200, gin.H{
 		"status": "healthy",
+		"services": gin.H{
+			"reddit":  true,
+			"twitter": twitterEnabled,
+		},
 	})
 }
 
 func getSentiment(c *gin.Context) {
 	symbol := c.Param("symbol")
+	var tweets []Tweet
+	var twitterScore float64
+	var tweetCount int
 
-	// Get Twitter sentiment
-	tweets, err := getTwitterPosts(symbol)
-	if err != nil {
-		log.Printf("Twitter error: %v", err)
+	// Get Twitter sentiment only if enabled
+	if twitterEnabled {
+		var err error
+		tweets, err = getTwitterPosts(symbol)
+		if err != nil {
+			log.Printf("Twitter error: %v", err)
+		} else {
+			// Calculate Twitter sentiment
+			for _, tweet := range tweets {
+				score := calculateSentiment(tweet.Text)
+				twitterScore += score
+				tweetCount++
+			}
+			if tweetCount > 0 {
+				twitterScore = twitterScore / float64(tweetCount)
+			}
+		}
 	}
 
 	// Get Reddit sentiment
 	redditPosts, err := getRedditPosts(symbol)
 	if err != nil {
 		log.Printf("Reddit error: %v", err)
-	}
-
-	// Calculate Twitter sentiment
-	var twitterScore float64
-	var tweetCount int
-	for _, tweet := range tweets {
-		score := calculateSentiment(tweet.Text)
-		twitterScore += score
-		tweetCount++
-	}
-	if tweetCount > 0 {
-		twitterScore = twitterScore / float64(tweetCount)
 	}
 
 	// Calculate Reddit sentiment
@@ -489,25 +512,27 @@ func calculateSentiment(text string) float64 {
 	return (positiveCount - negativeCount) / total
 }
 
+// mmodified for twitter
 func getTrending(c *gin.Context) {
 	symbols := []string{"BTC", "ETH", "BNB", "XRP", "DOGE"}
 	var trending []gin.H
 
 	for _, symbol := range symbols {
-		tweets, _ := getTwitterPosts(symbol)
-		redditPosts, _ := getRedditPosts(symbol)
-
 		var totalScore float64
 		var count int
 
-		// Calculate sentiment from tweets
-		for _, tweet := range tweets {
-			score := calculateSentiment(tweet.Text)
-			totalScore += score
-			count++
+		// Get Twitter sentiment only if enabled
+		if twitterEnabled {
+			tweets, _ := getTwitterPosts(symbol)
+			for _, tweet := range tweets {
+				score := calculateSentiment(tweet.Text)
+				totalScore += score
+				count++
+			}
 		}
 
-		// Calculate sentiment from Reddit posts
+		// Get Reddit sentiment
+		redditPosts, _ := getRedditPosts(symbol)
 		for _, post := range redditPosts {
 			score := calculateSentiment(post.Title + " " + post.SelfText)
 			totalScore += score

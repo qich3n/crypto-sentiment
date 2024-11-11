@@ -29,28 +29,44 @@
     </div>
 
     <script>
-    async function analyzeSentiment() {
-        const symbol = document.getElementById('symbol').value;
-        try {
-            const response = await fetch(`/api/v1/sentiment/${symbol}`);
-            const data = await response.json();
-            document.getElementById('result').innerHTML = `
-                <div class="bg-gray-50 p-4 rounded">
-                    <div class="text-xl font-bold mb-4">
-                        ${data.symbol.toUpperCase()}: ${(data.overall_score * 100).toFixed(1)}% 
-                        ${data.overall_score > 0.1 ? '📈 Bullish' : data.overall_score < -0.1 ? '📉 Bearish' : '↔️ Neutral'}
-                    </div>
-                    <div class="mb-2">Reddit Score: ${(data.reddit_score * 100).toFixed(1)}% (${data.reddit_posts} posts)</div>
-                    <div>Twitter Score: ${(data.twitter_score * 100).toFixed(1)}% (${data.tweets} tweets)</div>
-                </div>
-            `;
-        } catch (error) {
-            console.error('Error:', error);
-            document.getElementById('result').innerHTML = `
-                <div class="text-red-500">Error fetching data. Please try again.</div>
-            `;
+        let twitterEnabled = false;
+    
+        // Check if Twitter is enabled on page load
+        async function checkTwitterStatus() {
+            try {
+                const response = await fetch('/api/v1/health');
+                const data = await response.json();
+                twitterEnabled = data.services.twitter;
+            } catch (error) {
+                console.error('Error checking Twitter status:', error);
+            }
         }
-    }
-    </script>
+    
+        async function analyzeSentiment() {
+            const symbol = document.getElementById('symbol').value;
+            try {
+                const response = await fetch(`/api/v1/sentiment/${symbol}`);
+                const data = await response.json();
+                document.getElementById('result').innerHTML = `
+                    <div class="bg-gray-50 p-4 rounded">
+                        <div class="text-xl font-bold mb-4">
+                            ${data.symbol.toUpperCase()}: ${(data.overall_score * 100).toFixed(1)}% 
+                            ${data.overall_score > 0.1 ? '📈 Bullish' : data.overall_score < -0.1 ? '📉 Bearish' : '↔️ Neutral'}
+                        </div>
+                        <div class="mb-2">Reddit Score: ${(data.reddit_score * 100).toFixed(1)}% (${data.reddit_posts} posts)</div>
+                        ${twitterEnabled ? `<div>Twitter Score: ${(data.twitter_score * 100).toFixed(1)}% (${data.tweets} tweets)</div>` : ''}
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('result').innerHTML = `
+                    <div class="text-red-500">Error fetching data. Please try again.</div>
+                `;
+            }
+        }
+    
+        // Check Twitter status when page loads
+        document.addEventListener('DOMContentLoaded', checkTwitterStatus);
+        </script>
 </body>
 </html>
