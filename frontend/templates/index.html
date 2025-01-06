@@ -5,68 +5,40 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Crypto Sentiment Analyzer</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/static/css/styles.css">
 </head>
 <body class="bg-gray-100">
+    <div class="bg-gradient-to-r from-blue-500 to-indigo-600 p-6 text-center text-white shadow-lg">
+        <h1 class="text-3xl font-bold">Crypto Sentiment Analyzer</h1>
+        <p class="text-sm mt-2">Analyze sentiment for cryptocurrencies using Reddit data.</p>
+    </div>
+
     <div class="container mx-auto px-4 py-8">
         <div class="bg-white rounded-lg shadow-lg p-6">
-            <h1 class="text-2xl font-bold mb-4">Crypto Sentiment Analyzer</h1>
-            <div class="mb-4">
+            <h2 class="text-2xl font-bold mb-4">Enter Cryptocurrency Symbol</h2>
+            <div class="flex items-center mb-4">
                 <input 
                     type="text" 
                     id="symbol" 
-                    class="border rounded px-3 py-2"
+                    class="border rounded-l px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     placeholder="Enter symbol (e.g., BTC)"
                 />
                 <button 
                     onclick="analyzeSentiment()"
-                    class="ml-2 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                    class="bg-blue-500 text-white px-4 py-2 rounded-r hover:bg-blue-600"
                 >
                     Analyze
                 </button>
             </div>
+            <!-- Result will be dynamically updated here -->
             <div id="result" class="mt-4"></div>
         </div>
     </div>
 
-    <script>
-        let twitterEnabled = false;
-    
-        // Check if Twitter is enabled on page load
-        async function checkTwitterStatus() {
-            try {
-                const response = await fetch('/api/v1/health');
-                const data = await response.json();
-                twitterEnabled = data.services.twitter;
-            } catch (error) {
-                console.error('Error checking Twitter status:', error);
-            }
-        }
-    
-        async function analyzeSentiment() {
-            const symbol = document.getElementById('symbol').value;
-            try {
-                const response = await fetch(`/api/v1/sentiment/${symbol}`);
-                const data = await response.json();
-                document.getElementById('result').innerHTML = `
-                    <div class="bg-gray-50 p-4 rounded">
-                        <div class="text-xl font-bold mb-4">
-                            ${data.symbol.toUpperCase()}: ${(data.overall_score * 100).toFixed(1)}% 
-                            ${data.overall_score > 0.1 ? '📈 Bullish' : data.overall_score < -0.1 ? '📉 Bearish' : '↔️ Neutral'}
-                        </div>
-                        <div class="mb-2">Reddit Score: ${(data.reddit_score * 100).toFixed(1)}% (${data.reddit_posts} posts)</div>
-                        ${twitterEnabled ? `<div>Twitter Score: ${(data.twitter_score * 100).toFixed(1)}% (${data.tweets} tweets)</div>` : ''}
-                    </div>
-                `;
-            } catch (error) {
-                console.error('Error:', error);
-                document.getElementById('result').innerHTML = `
-                    <div class="text-red-500">Error fetching data. Please try again.</div>
-                `;
-            }
-        }
-    
-        // Check Twitter status when page loads
-        document.addEventListener('DOMContentLoaded', checkTwitterStatus);
-        </script>
+    <footer class="mt-20 text-center text-gray-500">
+        <p>© 2025 Crypto Sentiment Analyzer. All rights reserved.</p>
+    </footer>
+
+    <script src="/static/js/main.js"></script>
 </body>
 </html>
