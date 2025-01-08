@@ -8,7 +8,7 @@ async function checkTwitterStatus() {
         twitterEnabled = data.services.twitter;
     } catch (error) {
         console.error('Error checking Twitter status:', error);
-        twitterEnabled = false; // Assume Twitter is disabled if the check fails
+        twitterEnabled = false; // Assume Twitter is disabled if the check fails > remove or not
     }
 }
 
